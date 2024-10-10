@@ -1,0 +1,40 @@
+services:
+  keycloak:
+    image: ${KEYCLOAK_IMAGE}
+    hostname: keycloak.example.com
+    container_name: keycloak
+    environment:
+      KEYCLOAK_ADMIN: ${KEYCLOAK_ADMIN}
+      KEYCLOAK_ADMIN_PASSWORD: ${KEYCLOAK_ADMIN_PASSWORD}
+      KC_HTTP_ENABLED: ${KC_HTTP_ENABLED}
+      KC_HOSTNAME_STRICT: ${KC_HOSTNAME_STRICT}
+      KC_HOSTNAME_STRICT_HTTPS: ${KC_HOSTNAME_STRICT_HTTPS}
+      TZ: ${TIMEZONE}
+    ports:
+      - "8080:8080"
+    depends_on:
+      - keycloak-postgres-db-server
+    networks:
+      - keycloak-network
+    command: [
+      "start",
+      "--db=postgres",
+      "--db-url=${DB_URL}",
+      "--db-username=${DB_USERNAME}",
+      "--db-password=${DB_PASSWORD}",
+      "--http-enabled=true",
+      "--http-port=8080"
+    ]
+  keycloak-postgres-db-server:
+    image: ${POSTGRES_IMAGE}
+    hostname: keycloak-postgres-db-server.example.com
+    container_name: keycloak-postgres-db-server
+    environment:
+      POSTGRES_DB: ${DB_NAME}
+      POSTGRES_USER: ${DB_USERNAME}
+      POSTGRES_PASSWORD: ${DB_PASSWORD}
+      TZ: ${TIMEZONE}
+    networks:
+      - keycloak-network
+networks:
+  keycloak-network:

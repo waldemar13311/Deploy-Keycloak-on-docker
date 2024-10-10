@@ -1,0 +1,92 @@
+- name: "Deploy keycloak on docker"
+  hosts: all
+  gather_facts: true
+  vars:
+    keycloak_linux_user: "keycloak-user"
+    keycloak_workdir: "/opt/keycloak"
+
+  tasks:
+    - name: "Install dependent packages to Ubuntu"
+      ansible.builtin.include_tasks: tasks/Install-dependent-packages-to-ubuntu.ansible.yaml
+      when: ansible_distribution == "Ubuntu"
+
+    - name: "Install dependent packages to CentOS"
+      ansible.builtin.include_tasks: tasks/Install-dependent-packages-to-centos.ansible.yaml
+      when: ansible_distribution == "CentOS"
+
+    - name: "Create keycloak linux user"
+      become: true
+      ansible.builtin.user:
+        name: "{{ keycloak_linux_user }}"
+        shell: "/bin/bash"
+        groups: "docker"
+        state: present
+        password: "{{ 'CHANGE_ME' | password_hash('sha512') }}"
+
+    - name: "Create keycloak workdir"
+      become: true
+      ansible.builtin.file:
+        path: "{{ keycloak_workdir }}"
+        state: directory
+        mode: '0755'
+        owner: "{{ keycloak_linux_user }}"
+        group: "{{ keycloak_linux_user }}"
+
+    - name: "Copy docker-compose files to the target host"
+      become: true
+      ansible.builtin.copy:
+        src: "{{ item }}"
+        dest: "{{ keycloak_workdir }}"
+        owner: "{{ keycloak_linux_user }}"
+        group: "{{ keycloak_linux_user }}"
+        mode: '0600'
+      loop:
+        - ".env"
+        - "docker-compose.yml"
+
+    - name: "Read .env file"
+      ansible.builtin.slurp:
+        src: files/.env
+      delegate_to: localhost
+      register: slurped_file
+
+    - name: "Set fact with decoded content"
+      ansible.builtin.set_fact:
+        file_content: "{{ slurped_file.content | b64decode }}"
+
+    - name: "Parse environment variables into a dictionary"
+      ansible.builtin.set_fact:
+        env_vars: "{{ env_vars | default({}) | combine({item.split('=')[0]: item.split('=')[1]}) }}"
+      loop: "{{ file_content.splitlines() }}"
+      when: item is search('=')
+
+    - name: "Set keycloak image"
+      ansible.builtin.set_fact:
+        keycloak_image: "{{ env_vars.KEYCLOAK_IMAGE }}"
+
+    - name: "Debug keycloak image"
+      ansible.builtin.debug:
+        msg: "Keycloak image is: {{ keycloak_image }}"
+
+    - name: "Set postgres image"
+      ansible.builtin.set_fact:
+        postgres_image: "{{ env_vars.POSTGRES_IMAGE }}"
+
+    - name: "Debug postgres image"
+      ansible.builtin.debug:
+        msg: "Postgres image is: {{ postgres_image }}"
+
+    - name: "Pulling required docker images"
+      become: true
+      ansible.builtin.docker_image:
+        name: "{{ item }}"
+        source: pull
+      with_items:
+        - "{{ keycloak_image }}"
+        - "{{ postgres_image }}"
+
+    - name: Start keycloak services
+      become: true
+      community.docker.docker_compose_v2:
+        project_src: "{{ keycloak_workdir }}"
+        state: present
