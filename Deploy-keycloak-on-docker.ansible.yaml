@@ -78,7 +78,7 @@
 
     - name: "Pulling required docker images"
       become: true
-      community.docker_image:
+      community.docker.docker_image:
         name: "{{ item }}"
         source: pull
       with_items:
