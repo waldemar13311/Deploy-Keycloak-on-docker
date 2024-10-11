@@ -34,6 +34,8 @@ services:
       POSTGRES_USER: ${DB_USERNAME}
       POSTGRES_PASSWORD: ${DB_PASSWORD}
       TZ: ${TIMEZONE}
+    volumes:
+      - ./postgresql-data:/var/lib/postgresql/data
     networks:
       - keycloak-network
 networks:

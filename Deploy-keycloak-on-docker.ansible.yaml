@@ -3,6 +3,7 @@
   gather_facts: true
   vars:
     keycloak_linux_user: "keycloak-user"
+    keycloak_linux_pass: "CHANGE_ME"
     keycloak_workdir: "/opt/keycloak"
 
   tasks:
@@ -21,7 +22,7 @@
         shell: "/bin/bash"
         groups: "docker"
         state: present
-        password: "{{ 'CHANGE_ME' | password_hash('sha512') }}"
+        password: "{{ keycloak_linux_pass | password_hash('sha512') }}"
 
     - name: "Create keycloak workdir"
       become: true
