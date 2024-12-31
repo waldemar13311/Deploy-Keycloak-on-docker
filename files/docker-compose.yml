@@ -25,6 +25,8 @@ services:
       "--http-enabled=true",
       "--http-port=8080"
     ]
+    restart: unless-stopped
+
   keycloak-postgres-db-server:
     image: ${POSTGRES_IMAGE}
     hostname: keycloak-postgres-db-server.example.com
@@ -38,5 +40,7 @@ services:
       - ./postgresql-data:/var/lib/postgresql/data
     networks:
       - keycloak-network
+    restart: unless-stopped
+
 networks:
   keycloak-network:
