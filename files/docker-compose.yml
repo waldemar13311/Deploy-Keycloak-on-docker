@@ -1,8 +1,8 @@
 services:
   keycloak:
     image: ${KEYCLOAK_IMAGE}
-    hostname: keycloak.example.com
-    container_name: keycloak
+    hostname: ${KEYCLOAK_HOSTNAME}
+    container_name: ${KEYCLOAK_CONTAINER_NAME}
     environment:
       KEYCLOAK_ADMIN: ${KEYCLOAK_ADMIN}
       KEYCLOAK_ADMIN_PASSWORD: ${KEYCLOAK_ADMIN_PASSWORD}
